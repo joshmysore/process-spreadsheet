@@ -1,0 +1,23 @@
+<!doctype html>
+<title>CCLA | Procesamiento</title>
+<link rel=stylesheet type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+<h1>Subir un archivo Excel</h1>
+<form method="post" enctype="multipart/form-data">
+  <div class="file-input">
+    <input type="file" id="file" name="file" class="input-file">
+    <label for="file" class="file-label">Elegir un archivo</label>
+    <span id="file-name" class="file-name"></span>
+  </div>
+  <p><input type="submit" value="Subir"></p>
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      <p class="warning">{{ messages[0] }}</p>
+    {% endif %}
+  {% endwith %}
+</form>
+
+<script>
+  document.getElementById('file').addEventListener('change', function() {
+    document.getElementById('file-name').textContent = this.files[0].name;
+  });
+</script>
