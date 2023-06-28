@@ -88,16 +88,6 @@ def process_spreadsheet():
                 dfs.pop(sheet_name)
                 continue
 
-            # Check if 'm2 totales' column contains valid values
-            if df['m2 totales'].dtype not in ['int64', 'float64']:
-                print(f'Sheet "{sheet_name}" in "{file_path}" contains non-numeric values in "m2 totales". Skipping this sheet.')
-                dfs.pop(sheet_name)
-                continue
-            if df['m2 totales'].isnull().any():
-                print(f'Sheet "{sheet_name}" in "{file_path}" contains missing values in "m2 totales". Skipping this sheet.')
-                dfs.pop(sheet_name)
-                continue
-
         # Process each sheet
         for sheet_name, df in dfs.items():
             # Check if the apartment has "Sí" in column "Estudio" and then set "Tipología" to "Estudio". Then, if the apartment does not have "Sí" in column "Estudio", set "Tipología" to the concatenation of "Habitaciones" and "Baños".
