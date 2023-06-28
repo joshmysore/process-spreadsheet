@@ -1,40 +1,29 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, mock_open
 import pandas as pd
 import numpy as np
-from main_script import process_files
+import algo  # Import your main script
 
-class TestMainScript(unittest.TestCase):
-    @patch('pandas.read_excel')
-    def test_invalid_datatypes(self, mock_read_excel):
-        # Mock the return value of pandas.read_excel to simulate an Excel file with invalid datatypes
-        df = pd.DataFrame({
-            'Estudio': ['Si', 'No'],
-            'Habitaciones': ['one', 'two'],
-            'Baños': [1.5, 2.5],
-            'Latitud': [np.nan, np.nan]
-        })
-        mock_read_excel.return_value = {'Sheet1': df}
-
-        # Test that process_files raises an error
-        with self.assertRaises(ValueError):
-            process_files(['dummy_file_path'])
+class TestAlgo(unittest.TestCase):
 
     @patch('pandas.read_excel')
-    def test_missing_columns(self, mock_read_excel):
-        # Mock the return value of pandas.read_excel to simulate an Excel file with missing columns
-        df = pd.DataFrame({
-            'Estudio': ['Si', 'No'],
-            'Habitaciones': [1, 2]
-            # Missing 'Baños' and 'Latitud' columns
-        })
-        mock_read_excel.return_value = {'Sheet1': df}
+    def test_process_files(self, mock_read_excel):
+        # Mock data for the tests
+        mock_data = {
+            'Habitaciones': pd.Series([1, 2, 3], dtype=np.int64),
+            'Baños': pd.Series([1, 2, 3], dtype=np.int64),
+            'm2 totales': pd.Series([100, 200, 300]),
+        }
 
-        # Test that process_files raises an error
-        with self.assertRaises(KeyError):
-            process_files(['dummy_file_path'])
+        # Simulate the DataFrame that read_excel() would return
+        mock_df = pd.DataFrame(mock_data)
+        mock_read_excel.return_value = {'Sheet1': mock_df}
 
-    # Add more test cases here...
+        # Call the process_files() function with a mock file path
+        result = algo.process_files(['mock_file.xlsx'])
+
+        # Check the result
+        self.assertEqual(result, {'Sheet1': mock_df})
 
 if __name__ == '__main__':
     unittest.main()

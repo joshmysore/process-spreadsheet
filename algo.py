@@ -11,7 +11,7 @@ import math as math
 
 def process_spreadsheet():
     # Prompt the user in terminal
-    input("Press Enter to select files...")
+    input("Pulse Intro para seleccionar los archivos...")
 
     # Open a file dialog for the user to select multiple files
     root = tk.Tk()
@@ -278,5 +278,4 @@ def process_spreadsheet():
         print(f'Data processing complete. Results saved as "{processed_file_name}"')
 
 # Call the function
-# Added workflow
 process_spreadsheet()
