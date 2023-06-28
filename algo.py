@@ -156,11 +156,11 @@ def process_spreadsheet():
                     for arg in args:
                         # Handle functions without arguments differently
                         if arg is None:
-                            formula_precio = f'=AGGREGATE({function}, 5, {sheet.cell(row=2, column=precio_column).column_letter}2:{sheet.cell(row=row_num_stats - 1, column=precio_column).column_letter}{row_num_stats - 1})'
-                            formula_m2 = f'=AGGREGATE({function}, 5, {sheet.cell(row=2, column=m2_column).column_letter}2:{sheet.cell(row=row_num_stats - 1, column=m2_column).column_letter}{row_num_stats - 1})'
+                            formula_precio = f'=AGREGAR({function}, 5, {sheet.cell(row=2, column=precio_column).column_letter}2:{sheet.cell(row=row_num_stats - 1, column=precio_column).column_letter}{row_num_stats - 1})'
+                            formula_m2 = f'=AGREGAR({function}, 5, {sheet.cell(row=2, column=m2_column).column_letter}2:{sheet.cell(row=row_num_stats - 1, column=m2_column).column_letter}{row_num_stats - 1})'
                         else:
-                            formula_precio = f'=AGGREGATE({function}, 5, {sheet.cell(row=2, column=precio_column).column_letter}2:{sheet.cell(row=row_num_stats - 1, column=precio_column).column_letter}{row_num_stats - 1}, {arg})'
-                            formula_m2 = f'=AGGREGATE({function}, 5, {sheet.cell(row=2, column=m2_column).column_letter}2:{sheet.cell(row=row_num_stats - 1, column=m2_column).column_letter}{row_num_stats - 1}, {arg})'
+                            formula_precio = f'=AGREGAR({function}, 5, {sheet.cell(row=2, column=precio_column).column_letter}2:{sheet.cell(row=row_num_stats - 1, column=precio_column).column_letter}{row_num_stats - 1}, {arg})'
+                            formula_m2 = f'=AGREGAR({function}, 5, {sheet.cell(row=2, column=m2_column).column_letter}2:{sheet.cell(row=row_num_stats - 1, column=m2_column).column_letter}{row_num_stats - 1}, {arg})'
 
                         sheet.cell(row=row_num_stats + 1 + i, column=3, value=formula_precio).number_format = '$#,##0.00'
                         sheet.cell(row=row_num_stats + 1 + i, column=4, value=formula_m2).number_format = '#,##0.00'
