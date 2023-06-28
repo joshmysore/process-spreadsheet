@@ -35,8 +35,68 @@ def process_spreadsheet():
 
     # Loop over each selected file
     for file_path in file_paths:
+        # Check if the file is an Excel file
+        if not file_path.endswith(('.xls', '.xlsx')):
+            print(f'"{file_path}" is not an Excel file. Skipping this file.')
+            continue
+
+        try:
+            # Try to open the file to check if it is not currently open or inaccessible
+            with open(file_path, 'r') as f:
+                pass
+        except IOError:
+            print(f'Unable to open "{file_path}". It might be open in another program or you might not have permissions to access it. Skipping this file.')
+            continue
+
+        try:
+            # Check if the file is not empty by trying to read the first sheet
+            dfs = pd.read_excel(file_path, sheet_name=None)
+            first_sheet = list(dfs.keys())[0]
+            if dfs[first_sheet].empty:
+                print(f'"{file_path}" is empty. Skipping this file.')
+                continue
+        except Exception as e:
+            print(f'Unable to read "{file_path}". Error: {str(e)}. Skipping this file.')
+            continue
+
+        # Check for the existence of required columns
+        required_columns = ["Estudio", "Habitaciones", "Baños", "Latitud", "Superficie", "Mts Total", "Mts Útil", "Mts Total Imp", "Mts Útil Imp", "Url Busconido", "Descripción", "F. Desactivación", "Precio ($)"]
+        for sheet_name, df in dfs.items():
+            if not set(required_columns).issubset(df.columns):
+                print(f'Sheet "{sheet_name}" in "{file_path}" does not contain all the required columns. Skipping this sheet.')
+                dfs.pop(sheet_name)
+
         # Read all sheets from the current excel file
         dfs = pd.read_excel(file_path, sheet_name=None)
+
+        # After reading the file into a DataFrame
+        for sheet_name, df in dfs.items():
+            if not set(required_columns).issubset(df.columns):
+                print(f'Sheet "{sheet_name}" in "{file_path}" does not contain all the required columns. Skipping this sheet.')
+                dfs.pop(sheet_name)
+                continue
+
+            # Check if 'Habitaciones' and 'Baños' columns contain valid values
+            if df['Habitaciones'].dtype not in ['int64', 'float64'] or df['Baños'].dtype not in ['int64', 'float64']:
+                print(f'Sheet "{sheet_name}" in "{file_path}" contains non-numeric values in "Habitaciones" or "Baños". Skipping this sheet.')
+                dfs.pop(sheet_name)
+                continue
+            df['Habitaciones'] = df['Habitaciones'].apply(lambda x: math.floor(x) if pd.notnull(x) else "NaN")
+            df['Baños'] = df['Baños'].apply(lambda x: math.floor(x) if pd.notnull(x) else "NaN")
+            if df['Habitaciones'].min() < 1 or df['Baños'].min() < 1:
+                print(f'Sheet "{sheet_name}" in "{file_path}" contains values less than 1 in "Habitaciones" or "Baños". Skipping this sheet.')
+                dfs.pop(sheet_name)
+                continue
+
+            # Check if 'm2 totales' column contains valid values
+            if df['m2 totales'].dtype not in ['int64', 'float64']:
+                print(f'Sheet "{sheet_name}" in "{file_path}" contains non-numeric values in "m2 totales". Skipping this sheet.')
+                dfs.pop(sheet_name)
+                continue
+            if df['m2 totales'].isnull().any():
+                print(f'Sheet "{sheet_name}" in "{file_path}" contains missing values in "m2 totales". Skipping this sheet.')
+                dfs.pop(sheet_name)
+                continue
 
         # Process each sheet
         for sheet_name, df in dfs.items():
@@ -71,8 +131,14 @@ def process_spreadsheet():
                 min_m2 = min(group['m2 totales'])
                 max_m2 = max(group['m2 totales'])
 
-                # Calculate the number of filter ranges. 
-                num_ranges = math.ceil((max_m2 - min_m2) / 10)
+                # Check if min_m2 and max_m2 are the same to avoid zero division error
+                if min_m2 == max_m2:
+                    num_ranges = 1
+                else:
+                    # Calculate the number of filter ranges
+                    num_ranges = math.ceil((max_m2 - min_m2) / 10)
+
+                # Create a list of tuples that contain the filter ranges
                 filter_ranges = [(min_m2 + i * 10, min_m2 + (i + 1) * 10) for i in range(num_ranges)]
 
                 # Using filter_ranges, add ranges to the rangos columns that correspond to the m2 totales column.
@@ -85,7 +151,12 @@ def process_spreadsheet():
                 df.loc[group.index, :] = group
 
                 # Create a new sheet with the typology as the name
-                sheet = wb.create_sheet(typology)
+                sheet_name = typology
+                sheet_counter = 1
+                while sheet_name in wb.sheetnames:
+                    sheet_name = f'{typology}_{sheet_counter}'
+                    sheet_counter += 1
+                sheet = wb.create_sheet(sheet_name)
 
                 # Write the grouped dataframe to the sheet
                 for r in dataframe_to_rows(group, index=False, header=True):
