@@ -6,7 +6,6 @@ import os
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, NamedStyle, Side, Border
-from openpyxl import load_workbook
 import math as math
 
 def calc_m2_totales(df):
