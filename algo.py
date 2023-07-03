@@ -9,6 +9,11 @@ from openpyxl.styles import Font, PatternFill, NamedStyle, Side, Border
 from openpyxl import load_workbook
 import math as math
 
+def calc_m2_totales(df):
+    columns = ['Superficie', 'Mts Total', 'Mts Útil', 'Mts Total Imp', 'Mts Útil Imp']
+    df['m2 totales'] = df[columns].max(axis=1)
+    return df['m2 totales']
+
 def process_spreadsheet():
     # Prompt the user in terminal
     input("Pulse Intro para seleccionar los archivos...")
@@ -98,7 +103,7 @@ def process_spreadsheet():
             df.drop_duplicates(subset='Latitud', keep='first', inplace=True)
 
             # Create 'm2 totales' column
-            df['m2 totales'] = df[['Superficie', 'Mts Total', 'Mts Útil', 'Mts Total Imp', 'Mts Útil Imp']].max(axis=1)
+            df['m2 totales'] = calc_m2_totales(df)
 
             # Create empty 'rangos' column
             df['Rangos'] = ''
@@ -173,8 +178,9 @@ def process_spreadsheet():
                 blue_fill = PatternFill(start_color='9ab7e6', end_color='9ab7e6', fill_type='solid')
 
                 # List of labels
-                labels = ['Promedio:', 'Moda:',
-                          'Rango Mínimo:', 'Rango Máximo:', 'Percentil 80:', 'Percentil 85:', 'Percentil 90:', 'Percentil 95:']
+                labels = ['Promedio:', 'Moda:', 'Mediana:', 'Rango Mínimo:',
+                          'Rango Máximo:', 'Percentil 80:', 'Percentil 85:',
+                          'Percentil 90:', 'Percentil 95:']
 
                 # Write the column and row name in the stats box
                 for i in range(len(labels) + 1):
