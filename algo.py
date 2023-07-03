@@ -81,8 +81,8 @@ def process_spreadsheet():
                 print(f'Sheet "{sheet_name}" in "{file_path}" contains non-numeric values in "Habitaciones" or "Baños". Skipping this sheet.')
                 dfs.pop(sheet_name)
                 continue
-            df['Habitaciones'] = df['Habitaciones'].apply(lambda x: math.floor(x) if pd.notnull(x) else "NaN")
-            df['Baños'] = df['Baños'].apply(lambda x: math.floor(x) if pd.notnull(x) else "NaN")
+            df['Habitaciones'] = (df['Habitaciones'] // 1).fillna('NaN')
+            df['Baños'] = (df['Baños'] // 1).fillna('NaN')
             if df['Habitaciones'].min() < 1 or df['Baños'].min() < 1:
                 print(f'Sheet "{sheet_name}" in "{file_path}" contains values less than 1 in "Habitaciones" or "Baños". Skipping this sheet.')
                 dfs.pop(sheet_name)
@@ -206,6 +206,7 @@ def process_spreadsheet():
                 functions = {
                     1: [None],  # AVERAGE
                     13: [None], # MODE.SNGL
+                    12: [None], # MEDIANA
                     5: [None],  # MIN
                     4: [None],  # MAX
                     18: ['0.8', '0.85', '0.9', '0.95']  # PERCENTILE
