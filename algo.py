@@ -8,7 +8,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, NamedStyle, Side, Border
 import math as math
 
-
+# Define m2 totales función
 def calc_m2_totales(df):
     columns = ["Superficie",
                "Mts Total",
@@ -18,7 +18,90 @@ def calc_m2_totales(df):
     df["m2 totales"] = df[columns].max(axis=1)
     return df["m2 totales"]
 
+def calc_stats(sheet, group):
+    # Define el número de filas de estadísticas
+    row_num_stats = len(group) + 4
 
+    # Define el estilo de las celdas de estadísticas
+    bold_font = Font(bold=True)
+    blue_fill = PatternFill(
+        start_color="9ab7e6", end_color="9ab7e6", fill_type="solid"
+    )
+
+    # Define las etiquetas de las estadísticas
+    labels = [
+        "Promedio:",
+        "Moda:",
+        "Mediana:",
+        "Rango Mínimo:",
+        "Rango Máximo:",
+        "Percentil 80:",
+        "Percentil 85:",
+        "Percentil 90:",
+        "Percentil 95:",
+    ]
+
+    # Define las fórmulas de las estadísticas
+    for i in range(len(labels) + 1):
+        if i == 0:  # For the first row
+            sheet.cell(
+                row=row_num_stats, column=3, value="N. Precio ($)"
+            ).font = bold_font
+            sheet.cell(
+                row=row_num_stats, column=4, value="N. m2 totales"
+            ).font = bold_font
+            sheet.cell(row=row_num_stats, column=3).fill = blue_fill
+            sheet.cell(row=row_num_stats, column=4).fill = blue_fill
+        else:  # Para el resto de filas
+            sheet.cell(
+                row=row_num_stats + i, column=2, value=labels[i - 1]
+            ).font = bold_font
+            sheet.cell(row=row_num_stats + i, column=2).fill = blue_fill
+
+    # Busca las columnas de Precio ($) y m2 totales
+    precio_column = None
+    m2_column = None
+    for col, cell in enumerate(sheet[1], start=1):
+        if cell.value == "Precio ($)":
+            precio_column = col
+        elif cell.value == "m2 totales":
+            m2_column = col
+
+    if precio_column is None or m2_column is None:
+        print(f"Columns not found for 'Precio ($)' and 'm2 totales'")
+        return
+
+    # Define las funciones de estadísticas
+    functions = {
+        1: [None],  # PROMEDIO
+        13: [None],  # MODA
+        12: [None],  # MEDIANA
+        5: [None],  # MIN
+        4: [None],  # MAX
+        18: ["0.8", "0.85", "0.9", "0.95"],  # PERCENTIL
+    }
+
+    # Bucle para calcular las estadísticas
+    i = 0
+    for function, args in functions.items():
+        for arg in args:
+            # Hazlo con argumentos y sin argumentos
+            if arg is None:
+                formula_precio = f"=AGREGAR({function}, 5, {sheet.cell(row=2, column=precio_column).column_letter}2:{sheet.cell(row=row_num_stats - 1, column=precio_column).column_letter}{row_num_stats - 1})"
+                formula_m2 = f"=AGREGAR({function}, 5, {sheet.cell(row=2, column=m2_column).column_letter}2:{sheet.cell(row=row_num_stats - 1, column=m2_column).column_letter}{row_num_stats - 1})"
+            else:
+                formula_precio = f"=AGREGAR({function}, 5, {sheet.cell(row=2, column=precio_column).column_letter}2:{sheet.cell(row=row_num_stats - 1, column=precio_column).column_letter}{row_num_stats - 1}, {arg})"
+                formula_m2 = f"=AGREGAR({function}, 5, {sheet.cell(row=2, column=m2_column).column_letter}2:{sheet.cell(row=row_num_stats - 1, column=m2_column).column_letter}{row_num_stats - 1}, {arg})"
+
+            sheet.cell(
+                row=row_num_stats + 1 + i, column=3, value=formula_precio
+            ).number_format = "$#,##0.00"
+            sheet.cell(
+                row=row_num_stats + 1 + i, column=4, value=formula_m2
+            ).number_format = "#,##0.00"
+            i += 1
+
+# Define función para todo
 def process_spreadsheet():
     # Pide al usuario que seleccione los archivos
     input("Pulse enter para seleccionar los archivos...")
@@ -220,87 +303,8 @@ def process_spreadsheet():
                             bottom=Side(border_style="thin", color="d3d3d3"),
                         )
 
-                # Define el número de filas de estadísticas
-                row_num_stats = len(group) + 4
-
-                # Define el estilo de las celdas de estadísticas
-                bold_font = Font(bold=True)
-                blue_fill = PatternFill(
-                    start_color="9ab7e6", end_color="9ab7e6", fill_type="solid"
-                )
-
-                # Define las etiquetas de las estadísticas
-                labels = [
-                    "Promedio:",
-                    "Moda:",
-                    "Mediana:",
-                    "Rango Mínimo:",
-                    "Rango Máximo:",
-                    "Percentil 80:",
-                    "Percentil 85:",
-                    "Percentil 90:",
-                    "Percentil 95:",
-                ]
-
-                # Define las fórmulas de las estadísticas
-                for i in range(len(labels) + 1):
-                    if i == 0:  # For the first row
-                        sheet.cell(
-                            row=row_num_stats, column=3, value="N. Precio ($)"
-                        ).font = bold_font
-                        sheet.cell(
-                            row=row_num_stats, column=4, value="N. m2 totales"
-                        ).font = bold_font
-                        sheet.cell(row=row_num_stats, column=3).fill = blue_fill
-                        sheet.cell(row=row_num_stats, column=4).fill = blue_fill
-                    else:  # Para el resto de filas
-                        sheet.cell(
-                            row=row_num_stats + i, column=2, value=labels[i - 1]
-                        ).font = bold_font
-                        sheet.cell(row=row_num_stats + i, column=2).fill = blue_fill
-
-                # Busca las columnas de Precio ($) y m2 totales
-                precio_column = None
-                m2_column = None
-                for col, cell in enumerate(sheet[1], start=1):
-                    if cell.value == "Precio ($)":
-                        precio_column = col
-                    elif cell.value == "m2 totales":
-                        m2_column = col
-
-                if precio_column is None or m2_column is None:
-                    print(f"Columns not found for 'Precio ($)' and 'm2 totales'")
-                    continue
-
-                # Define las funciones de estadísticas
-                functions = {
-                    1: [None],  # PROMEDIO
-                    13: [None],  # MODA
-                    12: [None],  # MEDIANA
-                    5: [None],  # MIN
-                    4: [None],  # MAX
-                    18: ["0.8", "0.85", "0.9", "0.95"],  # PERCENTIL
-                }
-
-                # Bucle para calcular las estadísticas
-                i = 0
-                for function, args in functions.items():
-                    for arg in args:
-                        # Hazlo con argumentos y sin argumentos
-                        if arg is None:
-                            formula_precio = f"=AGREGAR({function}, 5, {sheet.cell(row=2, column=precio_column).column_letter}2:{sheet.cell(row=row_num_stats - 1, column=precio_column).column_letter}{row_num_stats - 1})"
-                            formula_m2 = f"=AGREGAR({function}, 5, {sheet.cell(row=2, column=m2_column).column_letter}2:{sheet.cell(row=row_num_stats - 1, column=m2_column).column_letter}{row_num_stats - 1})"
-                        else:
-                            formula_precio = f"=AGREGAR({function}, 5, {sheet.cell(row=2, column=precio_column).column_letter}2:{sheet.cell(row=row_num_stats - 1, column=precio_column).column_letter}{row_num_stats - 1}, {arg})"
-                            formula_m2 = f"=AGREGAR({function}, 5, {sheet.cell(row=2, column=m2_column).column_letter}2:{sheet.cell(row=row_num_stats - 1, column=m2_column).column_letter}{row_num_stats - 1}, {arg})"
-
-                        sheet.cell(
-                            row=row_num_stats + 1 + i, column=3, value=formula_precio
-                        ).number_format = "$#,##0.00"
-                        sheet.cell(
-                            row=row_num_stats + 1 + i, column=4, value=formula_m2
-                        ).number_format = "#,##0.00"
-                        i += 1
+                # Añade los estadísticos
+                calc_stats(sheet, group)
 
                 # Ajusta el ancho de las columnas
                 for column_cells in sheet.columns:
@@ -312,6 +316,12 @@ def process_spreadsheet():
                     max_length_id = max(len(str(cell.value)) for cell in sheet["A"])
                     sheet.column_dimensions["A"].width = max_length_id + 4
 
+                # Define el estilo de las celdas de estadísticas
+                bold_font = Font(bold=True)
+                blue_fill = PatternFill(
+                    start_color="9ab7e6", end_color="9ab7e6", fill_type="solid"
+                )
+                
                 # Da el diseño a la tabla
                 for cell in sheet[1]:
                     cell.font = bold_font
