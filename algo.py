@@ -280,7 +280,7 @@ def process_spreadsheet():
                 while sheet_name in wb.sheetnames:
                     sheet_name = f"{typology}_{sheet_counter}"
                     sheet_counter += 1
-                sheet = wb.create_sheet(sheet_name)
+                sheet = wb.create_sheet(str(sheet_name))
 
                 # Crea estilos para las filas pares e impares
                 for r in dataframe_to_rows(group, index=False, header=True):
