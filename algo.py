@@ -9,6 +9,7 @@ from openpyxl.styles import Font, PatternFill, NamedStyle, Side, Border
 import math as math
 import logging
 from datetime import datetime
+import warnings
 
 # Define función para seleccionar el archivo
 def setup_process():
@@ -196,6 +197,12 @@ def process_spreadsheet(selected_file):
 
         # Por cada tipología, calcula estadísticas
         for typology, group in grouped:
+            # Convierte la columna m2 totales a numérico
+            group["m2 totales"] = pd.to_numeric(group["m2 totales"], errors='coerce')
+
+            # Elimina filas con m2 totales vacíos
+            group = group.dropna(subset=["m2 totales"])
+
             # Calcula el min y max de m2 totales
             min_m2 = min(group["m2 totales"])
             max_m2 = max(group["m2 totales"])
@@ -205,7 +212,7 @@ def process_spreadsheet(selected_file):
             if min_m2 == max_m2:
                 num_ranges = 1
             else:
-                # Calcula el número de rangos
+                # Calcula el número de rangos 
                 num_ranges = math.ceil((max_m2 - min_m2) / 10)
                 logging.info(f'Calculando número de rangos: {num_ranges}')
 
@@ -216,16 +223,16 @@ def process_spreadsheet(selected_file):
             logging.info(f'Creando lista de tuplas con los rangos: {filter_ranges}')
 
             # Añade el rango a la columna Rangos
-            group["Rangos"] = pd.cut(
+            rangos_values = pd.cut(
                 group["m2 totales"],
                 bins=[range[0] for range in filter_ranges] + [max_m2 + 1],
                 labels=[f"{range[0]}-{range[1]}" for range in filter_ranges],
                 include_lowest=True,
             )
-            logging.info(f'Añadiendo el rango a la columna Rangos: {group["Rangos"]}')
+            logging.info(f'Añadiendo el rango a la columna Rangos.')
 
             # Mete el grupo en el dataframe
-            df.loc[group.index, :] = group
+            df.loc[group.index, "Rangos"] = rangos_values
 
             # Crea nuevas hojas para cada tipología
             sheet_name = typology
