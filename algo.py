@@ -223,16 +223,16 @@ def process_spreadsheet(selected_file):
             logging.info(f'Creando lista de tuplas con los rangos: {filter_ranges}')
 
             # Añade el rango a la columna Rangos
-            rangos_values = pd.cut(
+            group["Rangos"] = pd.cut(
                 group["m2 totales"],
                 bins=[range[0] for range in filter_ranges] + [max_m2 + 1],
                 labels=[f"{range[0]}-{range[1]}" for range in filter_ranges],
                 include_lowest=True,
             )
-            logging.info(f'Añadiendo el rango a la columna Rangos.')
+            logging.info(f'Añadiendo el rango a la columna Rangos: {group["Rangos"]}')
 
             # Mete el grupo en el dataframe
-            df.loc[group.index, "Rangos"] = rangos_values
+            df.loc[group.index, :] = group
 
             # Crea nuevas hojas para cada tipología
             sheet_name = typology
