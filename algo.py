@@ -411,4 +411,3 @@ def calc_stats(sheet, group):
 if __name__ == "__main__":
     selected_file = setup_process()
     process_spreadsheet(selected_file)
-    logging.info(f'Proceso finalizado')
