@@ -9,7 +9,6 @@ from openpyxl.styles import Font, PatternFill, NamedStyle, Side, Border
 import math as math
 import logging
 from datetime import datetime
-import warnings
 
 # Define función para seleccionar el archivo
 def setup_process():
