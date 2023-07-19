@@ -132,7 +132,8 @@ def process_spreadsheet(selected_file):
             )
             dfs.pop(sheet_name)
             continue
-
+        else: 
+            logging.info(f'Hoja "{sheet_name}" en "{selected_file}" contiene las columnas requeridas.')
         # Compueba que las columnas "Habitaciones" y "Baños" contienen valores numéricos
         if df["Habitaciones"].dtype not in ["int64", "float64"] or df[
             "Baños"
@@ -159,19 +160,23 @@ def process_spreadsheet(selected_file):
             "Estudio",
             df["Habitaciones"].astype(str) + "D" + df["Baños"].astype(str) + "B",
         )
-
+        logging.info(f'Columna Tipología creada con: {df["Tipología"]}')
         # Borra duplicados
         df.drop_duplicates(subset="Latitud", keep="first", inplace=True)
+        logging.info(f'Duplicados borrados basado en la columna Latitud')
 
         # Calcula m2 totales y rangos
         df["m2 totales"] = calc_m2_totales(df)
         df["Rangos"] = ""
+        logging.info(f'Columna m2 totales creada con: {df["m2 totales"]}')
+        logging.info(f'Columna Rangos creada con: {df["Rangos"]}')
 
         # Borra columnas innecesarias
         df.drop(
             columns=["Url Busconido", "Descripción", "F. Desactivación"],
             inplace=True,
         )
+        logging.info(f'Columnas innecesarias borradas: Url Busconido, Descripción, F. Desactivación')
 
         # Calcula el índice de la columna Precio ($)
         price_index = df.columns.get_loc("Precio ($)")
@@ -183,15 +188,18 @@ def process_spreadsheet(selected_file):
             + df.columns.tolist()[price_index + 1 : -2],
             axis=1,
         )
+        logging.info(f'Columnas reordenadas')
 
         # Agrupa por tipología
         grouped = df.groupby("Tipología")
+        logging.info(f'Columnas agrupadas por Tipología: {grouped}')
 
         # Por cada tipología, calcula estadísticas
         for typology, group in grouped:
             # Calcula el min y max de m2 totales
             min_m2 = min(group["m2 totales"])
             max_m2 = max(group["m2 totales"])
+            logging.info(f'Calculando min y max de m2 totales: {min_m2} y {max_m2}')
 
             # Si el min y max son iguales, solo hay un rango
             if min_m2 == max_m2:
@@ -199,11 +207,13 @@ def process_spreadsheet(selected_file):
             else:
                 # Calcula el número de rangos
                 num_ranges = math.ceil((max_m2 - min_m2) / 10)
+                logging.info(f'Calculando número de rangos: {num_ranges}')
 
             # Crea una lista de tuplas con los rangos
             filter_ranges = [
                 (min_m2 + i * 10, min_m2 + (i + 1) * 10) for i in range(num_ranges)
             ]
+            logging.info(f'Creando lista de tuplas con los rangos: {filter_ranges}')
 
             # Añade el rango a la columna Rangos
             group["Rangos"] = pd.cut(
@@ -212,6 +222,7 @@ def process_spreadsheet(selected_file):
                 labels=[f"{range[0]}-{range[1]}" for range in filter_ranges],
                 include_lowest=True,
             )
+            logging.info(f'Añadiendo el rango a la columna Rangos: {group["Rangos"]}')
 
             # Mete el grupo en el dataframe
             df.loc[group.index, :] = group
@@ -223,6 +234,7 @@ def process_spreadsheet(selected_file):
                 sheet_name = f"{typology}_{sheet_counter}"
                 sheet_counter += 1
             sheet = wb.create_sheet(str(sheet_name))
+            logging.info(f'Creando hoja {sheet_name}')
 
             # Crea estilos para las filas pares e impares
             for r in dataframe_to_rows(group, index=False, header=True):
@@ -244,9 +256,10 @@ def process_spreadsheet(selected_file):
                         top=Side(border_style="thin", color="d3d3d3"),
                         bottom=Side(border_style="thin", color="d3d3d3"),
                     )
-
+            logging.info(f'Estilos definidos para las filas pares e impares')
             # Añade los estadísticos
             calc_stats(sheet, group)
+            logging.info(f'Añadiendo estadísticos')
 
             # Ajusta el ancho de las columnas
             for column_cells in sheet.columns:
@@ -257,13 +270,14 @@ def process_spreadsheet(selected_file):
                 # Ajusta el ancho de la columna A
                 max_length_id = max(len(str(cell.value)) for cell in sheet["A"])
                 sheet.column_dimensions["A"].width = max_length_id + 4
+            logging.info(f'Ajustando el ancho de las columnas')
 
             # Define el estilo de las celdas de estadísticas
             bold_font = Font(bold=True)
             blue_fill = PatternFill(
                 start_color="9ab7e6", end_color="9ab7e6", fill_type="solid"
             )
-            
+            logging.info(f'Estilo de celdas de estadísticas definido como bold_font y blue_fill')
             # Da el diseño a la tabla
             for cell in sheet[1]:
                 cell.font = bold_font
@@ -397,3 +411,4 @@ def calc_stats(sheet, group):
 if __name__ == "__main__":
     selected_file = setup_process()
     process_spreadsheet(selected_file)
+    logging.info(f'Proceso finalizado')
