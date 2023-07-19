@@ -196,12 +196,6 @@ def process_spreadsheet(selected_file):
 
         # Por cada tipología, calcula estadísticas
         for typology, group in grouped:
-            # Convierte la columna m2 totales a numérico
-            group["m2 totales"] = pd.to_numeric(group["m2 totales"], errors='coerce')
-
-            # Elimina filas con m2 totales vacíos
-            group = group.dropna(subset=["m2 totales"])
-
             # Calcula el min y max de m2 totales
             min_m2 = min(group["m2 totales"])
             max_m2 = max(group["m2 totales"])
@@ -323,6 +317,12 @@ def calc_m2_totales(df):
                "Mts Útil",
                "Mts Total Imp",
                "Mts Útil Imp"]
+    # make sure there are only numbers and delete NANs in the columns
+    for column in columns:
+        df[column] = pd.to_numeric(df[column], errors='coerce')
+        # delete NANs
+        df[column] = df[column].fillna(0)
+    # calculate the max of the columns
     df["m2 totales"] = df[columns].max(axis=1)
     logging.info(f'Columnas {columns} procesadas para calcular m2 totales')
     return df["m2 totales"]
