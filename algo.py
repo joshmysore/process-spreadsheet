@@ -12,6 +12,15 @@ from datetime import datetime
 
 # Define función para seleccionar el archivo
 def setup_process():
+    # config para logging
+    logging.basicConfig(
+        level=logging.INFO, 
+        format='%(asctime)s - %(levelname)s - %(message)s', 
+        handlers=[
+            logging.StreamHandler()  # start with only the stream handler
+        ]
+    )
+    
     # Ask user for filename once and store it in a variable
     input('Presione Enter para seleccionar el archivo de Excel a procesar...')
     root = tk.Tk()
@@ -29,16 +38,10 @@ def setup_process():
         os.makedirs(folder_name)
         logging.info('Carpeta creada en {0}'.format(os.getcwd()))
 
-    # config para logging
-    logging.basicConfig(
-        level=logging.INFO, 
-        format='%(asctime)s - %(levelname)s - %(message)s', 
-        handlers=[
-            # name log after the file selected as such debug_{filename of selected file}_time.log and put it in folder_name
-            logging.FileHandler("{0}/debug_{1}_{2}.log".format(folder_name, selected_file_name, current_date)),
-            logging.StreamHandler()
-        ]
-    )
+    # Now that the directory exists, create the log file in it
+    file_handler = logging.FileHandler("{0}/debug_{1}_{2}.log".format(folder_name, selected_file_name, current_date))
+    logging.getLogger().addHandler(file_handler)
+    
     # statement saying log file has been created and saved whereever it is found
     logging.info('Archivo de log creado en {0}'.format(os.getcwd()))
 
@@ -48,6 +51,7 @@ def setup_process():
     logging.info('Empezando el programa')
 
     return selected_file
+
 
 # Define función para todo
 def process_spreadsheet(selected_file):
