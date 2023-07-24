@@ -63,6 +63,10 @@ Este proyecto requiere las siguientes bibliotecas de Python:
 - `math`
 - `datetime`
 
+```
+pip install pandas numpy openpyxl tkinter logging os math datetime
+```
+
 ## Proceso de transformación de datos
 
 El proceso de transformación de datos en `process_sheet()` realiza varias operaciones en el DataFrame para cada hoja de cálculo en el archivo de Excel. Aquí hay una descripción detallada de lo que sucede en esta función:
