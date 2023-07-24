@@ -113,4 +113,4 @@ Este proyecto está licenciado bajo los términos de la licencia de CCLA.
 
 ## Contacto
 
-Este programa fue creado por Josh Mysore mientras una pasantía con Compass en Julio 2023. Si tiene alguna pregunta o comentario sobre este proyecto, por favor póngase en contacto con el mantenedor actual del proyecto.
+Este programa fue creado por Josh Mysore, un estudiante de Havard, durante una pasantía con Compass en Julio 2023. Si tiene alguna pregunta o comentario sobre este proyecto, por favor póngase en contacto con el mantenedor actual del proyecto.
