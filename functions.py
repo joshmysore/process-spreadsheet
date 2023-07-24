@@ -161,7 +161,7 @@ def check_file_validity(selected_file):
     # Comprobar si selected_file es un archivo de Excel
     if not selected_file.endswith((".xls", ".xlsx")):
         logging.info(f'"{selected_file}" no es un archivo de Excel.')
-        return False
+        exit()
 
     try:
         # Comprobar si el archivo no está abierto por otro programa
@@ -169,7 +169,7 @@ def check_file_validity(selected_file):
             pass
     except IOError:
         logging.info(f'"{selected_file}" está abierto en otro programa.')
-        return False
+        exit()
 
     try:
         # Comprobar si el archivo no está vacío
@@ -177,10 +177,10 @@ def check_file_validity(selected_file):
         first_sheet = list(dfs.keys())[0]
         if dfs[first_sheet].empty:
             logging.info(f'"{selected_file}" está vacío. Se omitirá este archivo.')
-            return False
+            exit()
     except Exception as e:
         logging.info(f'No se puede leer "{selected_file}". Error: {str(e)}.')
-        return False
+        exit()
 
     # Declaración de registro que indica las comprobaciones que se han pasado
     logging.info(f'El archivo {selected_file} ha pasado las comprobaciones de ser un archivo de Excel con contenido.')
@@ -212,9 +212,9 @@ def read_and_preprocess_file(selected_file):
     for sheet_name, df in dfs.items():
         if not set(required_columns).issubset(df.columns):
             logging.info(
-                f'La hoja "{sheet_name}" en "{selected_file}" no contiene las columnas requeridas. Se omitirá esta hoja.'
+                f'La hoja "{sheet_name}" en "{selected_file}" no contiene las columnas requeridas. Se omitirá este archivo.'
             )
-            dfs.pop(sheet_name)
+            exit()
 
     # Comprobar si las columnas "Habitaciones" y "Baños" contienen valores numéricos
     for sheet_name, df in dfs.items():
@@ -222,11 +222,12 @@ def read_and_preprocess_file(selected_file):
             "Baños"
         ].dtype not in ["int64", "float64"]:
             logging.info(
-                f'La hoja "{sheet_name}" en "{selected_file}" contiene datos incorrectos para "Habitaciones" y/o "Baños". Se omitirá esta hoja.'
+                f'La hoja "{sheet_name}" en "{selected_file}" contiene datos incorrectos para "Habitaciones" y/o "Baños". Se omitirá este archivo.'
             )
-            dfs.pop(sheet_name)
-            continue
+            exit()
 
+    # Comprobar si las columnas "Habitaciones" y "Baños" contienen valores numéricos
+    for sheet_name, df in dfs.items():
         # Convertir "Habitaciones" y "Baños" a enteros, reemplazar NaN con "NaN"
         df["Habitaciones"] = (df["Habitaciones"] // 1).fillna("NaN")
         df["Baños"] = (df["Baños"] // 1).fillna("NaN")
@@ -234,10 +235,9 @@ def read_and_preprocess_file(selected_file):
         # Si "Habitaciones" y "Baños" contienen valores inferiores a 1, registrar un mensaje y omitir la hoja
         if df["Habitaciones"].min() < 1 or df["Baños"].min() < 1:
             logging.info(
-                f'La hoja "{sheet_name}" en "{selected_file}" contiene datos incorrectos para "Habitaciones" y/o "Baños". Se omitirá esta hoja.'
+                f'La hoja "{sheet_name}" en "{selected_file}" contiene datos incorrectos para "Habitaciones" y/o "Baños". Se omitirá este archivo.'
             )
-            dfs.pop(sheet_name)
-            continue
+            exit()
 
     return dfs
 

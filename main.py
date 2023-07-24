@@ -9,7 +9,7 @@ def main():
     check_file_validity(selected_file)
 
     # Leer y preprocesar el archivo en un DataFrame
-    dfs = pd.read_excel(selected_file, sheet_name=None)
+    dfs = read_and_preprocess_file(selected_file)
 
     # Crear un nuevo libro de Excel
     wb = Workbook()
