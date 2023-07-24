@@ -50,6 +50,8 @@ python main.py
 
 Se le pedirá que seleccione el archivo de Excel a procesar. El programa luego procesará el archivo, realizará varias transformaciones de datos y guardará los resultados en un nuevo archivo de Excel en la misma carpeta que el archivo original.
 
+También hay la posibilidad de correr el archivo ejecutable, que se encuentra en la carpeta `executable_files`. Para ejecutar el archivo ejecutable, simplemente haga doble clic en él. Se le pedirá que seleccione el archivo de Excel a procesar. El programa luego procesará el archivo, realizará varias transformaciones de datos y guardará los resultados en un nuevo archivo de Excel en una nueva carpeta en la misma carpeta que el archivo ejecutable.
+
 ## Dependencias
 
 Este proyecto requiere las siguientes bibliotecas de Python:
