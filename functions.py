@@ -12,230 +12,59 @@ from datetime import datetime
 
 # Define función para seleccionar el archivo
 def setup_process():
-    # Ask user for filename once and store it in a variable
+    # Configurar logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.StreamHandler()  # comenzar solo con el controlador de flujo
+        ]
+    )
+
+    # Solicitar al usuario el nombre de archivo y guardarlo en una variable
     input('Presione Enter para seleccionar el archivo de Excel a procesar...')
     root = tk.Tk()
     root.withdraw()
     selected_file = filedialog.askopenfilename()
     selected_file_name = os.path.basename(selected_file)
-    # Get current date
+    # Obtener la fecha actual
     now = datetime.now()
-    # Format date as string
-    current_date = now.strftime("%Y_%d_%m")
+    # Formatear la fecha como una cadena
+    current_date = now.strftime("%Y_%d_%m_%H_%M_%S")
     folder_name = 'resultados_{0}_{1}'.format(selected_file_name, current_date)
 
-    # make folder
+    # crear carpeta
     if not os.path.exists(folder_name):
         os.makedirs(folder_name)
         logging.info('Carpeta creada en {0}'.format(os.getcwd()))
 
-    # config para logging
-    logging.basicConfig(
-        level=logging.INFO, 
-        format='%(asctime)s - %(levelname)s - %(message)s', 
-        handlers=[
-            # name log after the file selected as such debug_{filename of selected file}_time.log and put it in folder_name
-            logging.FileHandler("{0}/debug_{1}_{2}.log".format(folder_name, selected_file_name, current_date)),
-            logging.StreamHandler()
-        ]
-    )
-    # statement saying log file has been created and saved whereever it is found
+    # Ahora que existe el directorio, crear el archivo de registro en él
+    file_handler = logging.FileHandler("{0}/debug_{1}_{2}.log".format(folder_name, selected_file_name, current_date))
+    logging.getLogger().addHandler(file_handler)
+
+    # declaración que indica que se ha creado y guardado el archivo de registro donde se encuentre
     logging.info('Archivo de log creado en {0}'.format(os.getcwd()))
 
-    # change the working directory to the new folder
+    # cambiar el directorio de trabajo a la nueva carpeta
     os.chdir(folder_name)
 
     logging.info('Empezando el programa')
 
     return selected_file
 
-
-    # Elimina la hoja por defecto
-    del wb["Sheet"]
-
-    # Guarda el archivo y dice la dirección
-    processed_file_name = "procesado_" + os.path.basename(selected_file)
-    wb.save(processed_file_name)
-    #make this print statemnet a logging one
-    logging.info(f'Procesamiento de datos finalizado. Resultados guardados como" {processed_file_name}" en {os.getcwd()}')
-
-def validate_file_extension(selected_file):
-    """Ensure the provided file has a valid Excel extension (.xls or .xlsx)."""
-    if not selected_file.endswith((".xls", ".xlsx")):
-        logging.info(f'"{selected_file}" no es un archivo de Excel.')
-        return False
-    return True
-
-def file_is_open(selected_file):
-    """Check if the provided file is open in another program."""
-    try:
-        with open(selected_file, "r") as f:
-            pass
-    except IOError:
-        logging.info(f'"{selected_file}" está abierto en otro programa.')
-        return True
-    return False
-
-def file_is_empty(selected_file):
-    """Check if the provided Excel file is empty."""
-    try:
-        dfs = pd.read_excel(selected_file, sheet_name=None)
-        first_sheet = list(dfs.keys())[0]
-        if dfs[first_sheet].empty:
-            logging.info(f'"{selected_file}" está vacío. Saltando este archivo.')
-            return True
-    except Exception as e:
-        logging.info(
-            f'No se puede leer "{selected_file}". Error: {str(e)}.'
-        )
-    return False
-
-def validate_required_columns(df, required_columns):
-    """Ensure the provided dataframe contains all the required columns."""
-    missing_columns = [column for column in required_columns if column not in df.columns]
-    if missing_columns:
-        logging.info(f"Columns missing from dataframe: {', '.join(missing_columns)}")
-        return False
-    return True
-
-def validate_data_values(df):
-    """Verify that certain columns contain numeric values and the values fall within the correct range."""
-    numeric_columns = ['Habitaciones', 'Baños']
-    for column in numeric_columns:
-        if not pd.api.types.is_numeric_dtype(df[column]):
-            logging.info(f"Column {column} is not numeric.")
-            return False
-        if df[column].min() < 0:
-            logging.info(f"Column {column} contains negative values.")
-            return False
-    return True
-
-def create_typology(df):
-    """Create the 'Tipología' column in the dataframe."""
-    try:
-        df['Tipología'] = df['Habitaciones'].astype(str) + ' habitaciones y ' + df['Baños'].astype(str) + ' baños'
-    except Exception as e:
-        logging.info(f"Failed to create 'Tipología' column. Error: {str(e)}")
-        return False
-    return True
-
-def remove_duplicates(df):
-    """Remove duplicate rows from the dataframe based on 'Latitud' column."""
-    try:
-        df.drop_duplicates(subset=['Latitud'], keep='first', inplace=True)
-    except Exception as e:
-        logging.info(f"Failed to remove duplicates. Error: {str(e)}")
-        return False
-    return True
-
-def create_m2_totales_and_ranges(df):
-    """Create 'm2 totales' and 'Rangos' columns in the dataframe."""
-    try:
-        df['m2 totales'] = df['Superficie cubierta (m2)'] + df['Superficie descubierta (m2)']
-        df['Rangos'] = pd.cut(df['m2 totales'], bins=[0,50,100,200, np.inf], labels=['0-50','50-100','100-200', '200+'])
-    except Exception as e:
-        logging.info(f"Failed to create 'm2 totales' and 'Rangos' columns. Error: {str(e)}")
-        return False
-    return True
-
-def remove_unnecessary_columns(df):
-    """Remove unnecessary columns from the dataframe."""
-    columns_to_remove = ['Column1', 'Column2', 'Column3']  # specify columns to remove here
-    try:
-        df.drop(columns_to_remove, axis=1, inplace=True)
-    except Exception as e:
-        logging.info(f"Failed to remove unnecessary columns. Error: {str(e)}")
-        return False
-    return True
-
-def reorder_columns(df, price_index):
-    """Reorder columns in the dataframe."""
-    try:
-        columns = list(df.columns)
-        columns.insert(price_index, columns.pop(columns.index('Precio')))
-        df = df[columns]
-    except Exception as e:
-        logging.info(f"Failed to reorder columns. Error: {str(e)}")
-        return False
-    return True
-
-def calculate_and_add_ranges(df, grouped):
-    """Calculate ranges and add it to the 'Rangos' column."""
-    try:
-        df['Rangos'] = df.groupby(grouped)['m2 totales'].apply(
-            lambda x: pd.cut(x, bins=[0,50,100,200, np.inf], labels=['0-50','50-100','100-200', '200+'])
-        )
-    except Exception as e:
-        logging.info(f"Failed to calculate and add ranges. Error: {str(e)}")
-        return False
-    return True
-
-def create_sheets_for_typologies(wb, df, grouped):
-    """Create new sheets for each typology."""
-    try:
-        for name, group in df.groupby(grouped):
-            group.to_excel(wb, sheet_name=name, index=False)
-    except Exception as e:
-        logging.info(f"Failed to create sheets for each typology. Error: {str(e)}")
-        return False
-    return True
-
-def style_and_adjust_sheet(wb, sheet, group):
-    """Define styles for rows and adjust column width."""
-    try:
-        # Get the sheet from workbook
-        ws = wb[sheet]
-
-        # Define a font style
-        font = Font(bold=True)
-        for cell in ws[1]:  # assuming the first row needs to be bold
-            cell.font = font
-
-        # Adjust column widths
-        for column in ws.columns:
-            max_length = 0
-            column = [cell for cell in column]
-            for cell in column:
-                try:
-                    if len(str(cell.value)) > max_length:
-                        max_length = len(cell.value)
-                except:
-                    pass
-            adjusted_width = (max_length + 2)
-            ws.column_dimensions[(column[0].column)].width = adjusted_width
-
-    except Exception as e:
-        logging.info(f"Failed to style and adjust sheet. Error: {str(e)}")
-        return False
-    return True
-
-def filter_rangos_column(sheet):
-    """Apply a filter to the 'Rangos' column."""
-    try:
-        # Assuming 'Rangos' column is column C (3rd column), adjust as per your sheet
-        sheet.auto_filter.ref = sheet.dimensions
-        sheet.auto_filter.add_filter_column(2, ["0-50", "50-100", "100-200", "200+"])
-    except Exception as e:
-        logging.info(f"Failed to filter 'Rangos' column. Error: {str(e)}")
-        return False
-    return True
-
-def save_workbook(wb, selected_file):
-    """Save the workbook."""
-    try:
-        wb.save(filename = selected_file)
-    except Exception as e:
-        logging.info(f"Failed to save workbook. Error: {str(e)}")
-        return False
-    return True
-
-# Define m2 totales función
+# Define función para calcular m2 totales
 def calc_m2_totales(df):
     columns = ["Superficie",
                "Mts Total",
                "Mts Útil",
                "Mts Total Imp",
                "Mts Útil Imp"]
+    # Aegurarse de que solo haya números y eliminar los NAN en las columnas
+    for column in columns:
+        df[column] = pd.to_numeric(df[column], errors='coerce')
+        # eliminar los NAN
+        df[column] = df[column].fillna(0)
+    # Calcular el máximo de las columnas
     df["m2 totales"] = df[columns].max(axis=1)
     logging.info(f'Columnas {columns} procesadas para calcular m2 totales')
     return df["m2 totales"]
@@ -269,7 +98,7 @@ def calc_stats(sheet, group):
 
     # Define las fórmulas de las estadísticas
     for i in range(len(labels) + 1):
-        if i == 0:  # For the first row
+        if i == 0:  # Para la primera fila
             sheet.cell(
                 row=row_num_stats, column=3, value="N. Precio ($)"
             ).font = bold_font
@@ -284,7 +113,7 @@ def calc_stats(sheet, group):
             ).font = bold_font
             sheet.cell(row=row_num_stats + i, column=2).fill = blue_fill
 
-    # Busca las columnas de Precio ($) y m2 totales
+    # Buscar las columnas de Precio ($) y m2 totales
     precio_column = None
     m2_column = None
     for col, cell in enumerate(sheet[1], start=1):
@@ -294,10 +123,10 @@ def calc_stats(sheet, group):
             m2_column = col
 
     if precio_column is None or m2_column is None:
-        print(f"Columns not found for 'Precio ($)' and 'm2 totales'")
+        print(f"Columnas no encontradas para 'Precio ($)' y 'm2 totales'")
         return
 
-    # Define las funciones de estadísticas
+    # Definir las funciones de estadísticas
     functions = {
         1: [None],  # PROMEDIO
         13: [None],  # MODA
@@ -311,7 +140,7 @@ def calc_stats(sheet, group):
     i = 0
     for function, args in functions.items():
         for arg in args:
-            # Hazlo con argumentos y sin argumentos
+            # Hacerlo con argumentos y sin argumentos
             if arg is None:
                 formula_precio = f"=AGREGAR({function}, 5, {sheet.cell(row=2, column=precio_column).column_letter}2:{sheet.cell(row=row_num_stats - 1, column=precio_column).column_letter}{row_num_stats - 1})"
                 formula_m2 = f"=AGREGAR({function}, 5, {sheet.cell(row=2, column=m2_column).column_letter}2:{sheet.cell(row=row_num_stats - 1, column=m2_column).column_letter}{row_num_stats - 1})"
@@ -326,3 +155,268 @@ def calc_stats(sheet, group):
                 row=row_num_stats + 1 + i, column=4, value=formula_m2
             ).number_format = "#,##0.00"
             i += 1
+
+# Define función para comprobar la validez del archivo
+def check_file_validity(selected_file):
+    # Comprobar si selected_file es un archivo de Excel
+    if not selected_file.endswith((".xls", ".xlsx")):
+        logging.info(f'"{selected_file}" no es un archivo de Excel.')
+        return False
+
+    try:
+        # Comprobar si el archivo no está abierto por otro programa
+        with open(selected_file, "r") as f:
+            pass
+    except IOError:
+        logging.info(f'"{selected_file}" está abierto en otro programa.')
+        return False
+
+    try:
+        # Comprobar si el archivo no está vacío
+        dfs = pd.read_excel(selected_file, sheet_name=None)
+        first_sheet = list(dfs.keys())[0]
+        if dfs[first_sheet].empty:
+            logging.info(f'"{selected_file}" está vacío. Se omitirá este archivo.')
+            return False
+    except Exception as e:
+        logging.info(f'No se puede leer "{selected_file}". Error: {str(e)}.')
+        return False
+
+    # Declaración de registro que indica las comprobaciones que se han pasado
+    logging.info(f'El archivo {selected_file} ha pasado las comprobaciones de ser un archivo de Excel con contenido.')
+    return True
+
+# Define función para leer y preprocesar el archivo
+def read_and_preprocess_file(selected_file):
+    # Leer el archivo de Excel en un DataFrame
+    dfs = pd.read_excel(selected_file, sheet_name=None)
+
+    # Columnas requeridas
+    required_columns = [
+        "Estudio",
+        "Habitaciones",
+        "Baños",
+        "Latitud",
+        "Superficie",
+        "Mts Total",
+        "Mts Útil",
+        "Mts Total Imp",
+        "Mts Útil Imp",
+        "Url Busconido",
+        "Descripción",
+        "F. Desactivación",
+        "Precio ($)",
+    ]
+
+    # Comprobar si cada hoja en el archivo contiene todas las columnas requeridas
+    for sheet_name, df in dfs.items():
+        if not set(required_columns).issubset(df.columns):
+            logging.info(
+                f'La hoja "{sheet_name}" en "{selected_file}" no contiene las columnas requeridas. Se omitirá esta hoja.'
+            )
+            dfs.pop(sheet_name)
+
+    # Comprobar si las columnas "Habitaciones" y "Baños" contienen valores numéricos
+    for sheet_name, df in dfs.items():
+        if df["Habitaciones"].dtype not in ["int64", "float64"] or df[
+            "Baños"
+        ].dtype not in ["int64", "float64"]:
+            logging.info(
+                f'La hoja "{sheet_name}" en "{selected_file}" contiene datos incorrectos para "Habitaciones" y/o "Baños". Se omitirá esta hoja.'
+            )
+            dfs.pop(sheet_name)
+            continue
+
+        # Convertir "Habitaciones" y "Baños" a enteros, reemplazar NaN con "NaN"
+        df["Habitaciones"] = (df["Habitaciones"] // 1).fillna("NaN")
+        df["Baños"] = (df["Baños"] // 1).fillna("NaN")
+
+        # Si "Habitaciones" y "Baños" contienen valores inferiores a 1, registrar un mensaje y omitir la hoja
+        if df["Habitaciones"].min() < 1 or df["Baños"].min() < 1:
+            logging.info(
+                f'La hoja "{sheet_name}" en "{selected_file}" contiene datos incorrectos para "Habitaciones" y/o "Baños". Se omitirá esta hoja.'
+            )
+            dfs.pop(sheet_name)
+            continue
+
+    return dfs
+
+# Define función para crear y aplicar estilos
+def create_and_apply_styles(wb):
+    # Crear estilos para el libro de trabajo
+    odd_row_fill = PatternFill(
+        start_color="D3D3D3", end_color="D3D3D3", fill_type="solid"
+    )
+    odd_row_style = NamedStyle(name="odd_row_style", fill=odd_row_fill)
+    even_row_fill = PatternFill(
+        start_color="FFFFFF", end_color="FFFFFF", fill_type="solid"
+    )
+    even_row_style = NamedStyle(name="even_row_style", fill=even_row_fill)
+
+    # Agregar los estilos a los estilos con nombre del libro de trabajo
+    wb.add_named_style(odd_row_style)
+    wb.add_named_style(even_row_style)
+
+    return odd_row_style, even_row_style
+
+# Define función para procesar las hojas
+def process_sheet(dfs, wb, odd_row_style, even_row_style):
+    for sheet_name, df in dfs.items():   
+        # Crear tipología
+        df["Tipología"] = np.where(
+            df["Estudio"] == "Si",
+            "Estudio",
+            df["Habitaciones"].astype(str) + "D" + df["Baños"].astype(str) + "B",
+        )
+        logging.info(f'Columna Tipología creada con: {df["Tipología"]}')
+        
+        # Eliminar duplicados
+        df.drop_duplicates(subset="Latitud", keep="first", inplace=True)
+        logging.info(f'Duplicados borrados basados en la columna Latitud')
+
+        # Calcular m2 totales y rangos
+        df["m2 totales"] = calc_m2_totales(df)
+        df["Rangos"] = ""
+        logging.info(f'Columna m2 totales creada con: {df["m2 totales"]}')
+        logging.info(f'Columna Rangos creada con: {df["Rangos"]}')
+
+        # Eliminar columnas innecesarias
+        df.drop(
+            columns=["Url Busconido", "Descripción", "F. Desactivación"],
+            inplace=True,
+        )
+        logging.info(f'Columnas innecesarias borradas: Url Busconido, Descripción, F. Desactivación')
+
+        # Calcular el índice de la columna Precio ($)
+        price_index = df.columns.get_loc("Precio ($)")
+
+        # Reorganizar las columnas
+        df = df.reindex(
+            df.columns.tolist()[: price_index + 1]
+            + ["m2 totales", "Rangos"]
+            + df.columns.tolist()[price_index + 1 : -2],
+            axis=1,
+        )
+        logging.info(f'Columnas reorganizadas')
+
+        # Agrupar por tipología
+        grouped = df.groupby("Tipología")
+        logging.info(f'Columnas agrupadas por Tipología: {grouped}')
+
+        # Para cada tipología, calcular estadísticas
+        for typology, group in grouped:
+            # Calcular el mínimo y máximo de m2 totales
+            min_m2 = min(group["m2 totales"])
+            max_m2 = max(group["m2 totales"])
+            logging.info(f'Calculando mínimo y máximo de m2 totales: {min_m2} y {max_m2}')
+
+            # Si el mínimo y máximo son iguales, solo hay un rango
+            if min_m2 == max_m2:
+                num_ranges = 1
+            else:
+                # Calcular el número de rangos 
+                num_ranges = math.ceil((max_m2 - min_m2) / 10)
+                logging.info(f'Calculando número de rangos: {num_ranges}')
+
+            # Crear una lista de tuplas con los rangos
+            filter_ranges = [
+                (min_m2 + i * 10, min_m2 + (i + 1) * 10) for i in range(num_ranges)
+            ]
+            logging.info(f'Creando lista de tuplas con los rangos: {filter_ranges}')
+
+            # Agregar el rango a la columna Rangos
+            group["Rangos"] = pd.cut(
+                group["m2 totales"],
+                bins=[range[0] for range in filter_ranges] + [max_m2 + 1],
+                labels=[f"{range[0]}-{range[1]}" for range in filter_ranges],
+                include_lowest=True,
+            )
+            logging.info(f'Añadiendo el rango a la columna Rangos: {group["Rangos"]}')
+
+            # Colocar el grupo en el DataFrame
+            df.loc[group.index, :] = group
+
+            # Crear nuevas hojas para cada tipología
+            sheet_name = typology
+            sheet_counter = 1
+            while sheet_name in wb.sheetnames:
+                sheet_name = f"{typology}_{sheet_counter}"
+                sheet_counter += 1
+            sheet = wb.create_sheet(str(sheet_name))
+            logging.info(f'Creando hoja {sheet_name}')
+
+            # Crear estilos para las filas pares e impares
+            for r in dataframe_to_rows(group, index=False, header=True):
+                sheet.append(r)
+
+            # Establecer estilos para las filas pares e impares
+            for i, row in enumerate(
+                sheet.iter_rows(min_row=2, max_row=len(group) + 1), 2
+            ):
+                for cell in row:
+                    if i % 2 == 0:
+                        cell.style = odd_row_style
+                    else:
+                        cell.style = even_row_style
+                    # Establecer el borde de las celdas
+                    cell.border = Border(
+                        left=Side(border_style="thin", color="d3d3d3"),
+                        right=Side(border_style="thin", color="d3d3d3"),
+                        top=Side(border_style="thin", color="d3d3d3"),
+                        bottom=Side(border_style="thin", color="d3d3d3"),
+                    )
+            logging.info(f'Estilos definidos para las filas pares e impares')
+
+            # Agregar las estadísticas
+            calc_stats(sheet, group)
+            logging.info(f'Añadiendo estadísticos')
+
+            # Ajustar el ancho de las columnas
+            for column_cells in sheet.columns:
+                max_length = max(len(str(cell.value)) for cell in column_cells)
+                column_letter = column_cells[0].column_letter
+                sheet.column_dimensions[column_letter].width = max_length + 4
+
+                # Ajustar el ancho de la columna A
+                max_length_id = max(len(str(cell.value)) for cell in sheet["A"])
+                sheet.column_dimensions["A"].width = max_length_id + 4
+            logging.info(f'Ajustando el ancho de las columnas')
+
+            # Establecer el estilo de las celdas de estadísticas
+            bold_font = Font(bold=True)
+            blue_fill = PatternFill(
+                start_color="9ab7e6", end_color="9ab7e6", fill_type="solid"
+            )
+            logging.info(f'Estilo de celdas de estadísticas definido como bold_font y blue_fill')
+            # Dar diseño a la tabla
+            for cell in sheet[1]:
+                cell.font = bold_font
+                cell.fill = blue_fill
+
+            # Buscar la columna Rangos
+            rangos_column = None
+            for col, cell in enumerate(sheet[1], start=1):
+                if cell.value == "Rangos":
+                    rangos_column = col
+                    break
+
+            if rangos_column is None:
+                print(f"Columna no encontrada para 'Rangos'")
+            else:
+                # Filtrar la columna Rangos
+                rangos_column_letter = sheet.cell(
+                    row=1, column=rangos_column
+                ).column_letter
+                sheet.auto_filter.ref = (
+                    f"{rangos_column_letter}1:{rangos_column_letter}{sheet.max_row}"
+                )
+
+    return wb
+
+# Define función para guardar el archivo
+def save_workbook(wb, selected_file):
+    # Guardar el libro de trabajo e imprimir la dirección
+    processed_file_name = "procesado_" + os.path.basename(selected_file)
+    wb.save(processed_file_name)
+    logging.info(f'Procesamiento de datos finalizado. Resultados guardados como "{processed_file_name}" en {os.getcwd()}')
+    return processed_file_name

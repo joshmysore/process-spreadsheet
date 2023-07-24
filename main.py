@@ -1,80 +1,31 @@
-import pandas as pd
-import openpyxl
 from openpyxl import Workbook
-from functions import *  # Replace 'your_module' with the actual module name
+from functions import *
 
 def main():
-    # Setup process and select the file
+    # Configurar el proceso y seleccionar el archivo a procesar
     selected_file = setup_process()
 
-    # Checking the file extension
-    if not validate_file_extension(selected_file):
-        logging.error("Invalid file extension.")
-        return
+    # Verificar la validez del archivo seleccionado
+    check_file_validity(selected_file)
 
-    # Checking if file is open
-    if file_is_open(selected_file):
-        logging.error("File is currently open in another program.")
-        return
+    # Leer y preprocesar el archivo en un DataFrame
+    dfs = pd.read_excel(selected_file, sheet_name=None)
 
-    # Checking if file is empty
-    if file_is_empty(selected_file):
-        logging.error("File is empty.")
-        return
-
-    # Load data into a pandas DataFrame
-    df = pd.read_excel(selected_file)
-
-    # List of required columns
-    required_columns = ["Column1", "Column2", ...]  # Replace with actual column names
-
-    # Validating required columns
-    if not validate_required_columns(df, required_columns):
-        logging.error("DataFrame does not contain all the required columns.")
-        return
-
-    # Validate data values
-    if not validate_data_values(df):
-        logging.error("Data in certain columns are invalid.")
-        return
-
-    # Create 'Tipología' column
-    df = create_typology(df)
-
-    # Remove duplicates based on 'Latitud' column
-    df = remove_duplicates(df)
-
-    # Calculate 'm2 totales'
-    df["m2 totales"] = calc_m2_totales(df)
-
-    # Remove unnecessary columns
-    df = remove_unnecessary_columns(df)
-
-    # Reorder columns, replace 'price_index' with the correct index or column name
-    df = reorder_columns(df, price_index)
-
-    # Calculate and add ranges
-    df, grouped = calculate_and_add_ranges(df)
-
-    # Initialize workbook
+    # Crear un nuevo libro de Excel
     wb = Workbook()
 
-    # Create new sheets for each typology
-    wb = create_sheets_for_typologies(wb, df, grouped)
+    # Eliminar la hoja predeterminada 'Sheet'
+    if 'Sheet' in wb.sheetnames:
+        del wb['Sheet']
 
-    # Assuming 'sheet' and 'group' are defined
-    # Style and adjust sheet
-    wb = style_and_adjust_sheet(wb, sheet, group)
+    # Crear y aplicar los estilos para el libro de trabajo
+    odd_row_style, even_row_style = create_and_apply_styles(wb)
 
-    # Calculate stats
-    calc_stats(sheet, group)
+    # Procesar cada hoja en el DataFrame y modificar el libro de trabajo
+    wb = process_sheet(dfs, wb, odd_row_style, even_row_style)
 
-    # Apply a filter to the 'Rangos' column
-    wb = filter_rangos_column(sheet)
-
-    # Save the workbook
-    if not save_workbook(wb, selected_file):
-        logging.error("Failed to save the workbook.")
+    # Guardar el libro de trabajo
+    save_workbook(wb, selected_file)
 
 if __name__ == "__main__":
     main()
