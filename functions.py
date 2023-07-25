@@ -124,7 +124,7 @@ def calc_stats(sheet, group):
 
     if precio_column is None or m2_column is None:
         print(f"Columnas no encontradas para 'Precio ($)' y 'm2 totales'")
-        return
+        exit()
 
     # Definir las funciones de estadísticas
     functions = {
@@ -180,6 +180,11 @@ def check_file_validity(selected_file):
             exit()
     except Exception as e:
         logging.info(f'No se puede leer "{selected_file}". Error: {str(e)}.')
+        exit()
+
+    # Comprobar de que el archivo solo tenga una hoja
+    if len(dfs.keys()) > 1:
+        logging.info(f'"{selected_file}" contiene más de una hoja. Se omitirá este archivo.')
         exit()
 
     # Declaración de registro que indica las comprobaciones que se han pasado
@@ -241,7 +246,7 @@ def read_and_preprocess_file(selected_file):
 
     return dfs
 
-# Define función para crear y aplicar estilos
+# Define función para crear y aplicar estilos de la tabla
 def create_and_apply_styles(wb):
     # Crear estilos para el libro de trabajo
     odd_row_fill = PatternFill(
@@ -413,7 +418,7 @@ def process_sheet(dfs, wb, odd_row_style, even_row_style):
 
     return wb
 
-# Define función para guardar el archivo
+# Define función para guardar el nuevo archivo
 def save_workbook(wb, selected_file):
     # Guardar el libro de trabajo e imprimir la dirección
     processed_file_name = "procesado_" + os.path.basename(selected_file)

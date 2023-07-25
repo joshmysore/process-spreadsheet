@@ -2,7 +2,9 @@
 
 ## Descripción general
 
-Este proyecto es una herramienta de procesamiento de hojas de cálculo de Excel escrita en Python que permite procesar archivos de Excel, realizar varias validaciones y transformaciones de datos, y luego guardar los resultados en un nuevo archivo de Excel. El proyecto se compone de dos scripts principales, `main.py` y `functions.py`.
+Este proyecto es una herramienta de procesamiento de hojas de cálculo de Excel escrita en Python que permite procesar archivos de Excel de Busconido, realizar varias validaciones y transformaciones de datos, y luego guardar los resultados en un nuevo archivo de Excel. El proyecto se compone de dos scripts principales, `main.py` y `functions.py`.
+
+Busconido es un portal de arriendo en Chile que aporta datos actuales del mercado sobre propiedades en todo el país. La idea fue sacar los datos de esta fuente y procesarlos para obtener información relevante para el negocio.
 
 El script `main.py` es el punto de entrada del programa y utiliza funciones definidas en el script `functions.py` para realizar el procesamiento. `functions.py` contiene una serie de funciones auxiliares que se utilizan para tareas específicas en el proceso de transformación de datos.
 
@@ -10,7 +12,7 @@ El script `main.py` es el punto de entrada del programa y utiliza funciones defi
 
 `main.py` consta de una función principal `main()` que se ejecuta cuando el script se ejecuta como un programa independiente. Aquí está la descripción detallada del flujo del programa:
 
-1. **Configuración del proceso y selección del archivo a procesar:** El programa primero llama a la función `setup_process()` para solicitar al usuario que seleccione el archivo de Excel a procesar. Esta función devuelve la ruta del archivo seleccionado.
+1. **Configuración del proceso y selección del archivo a procesar:** El programa primero llama a la función `setup_process()` para solicitar al usuario que seleccione el archivo de Excel a procesar. Esta función devuelve la ruta del archivo seleccionado. También se instala el registro del código durante esta parte.
 
 2. **Verificación de la validez del archivo seleccionado:** A continuación, el programa llama a la función `check_file_validity(selected_file)` para verificar si el archivo seleccionado es válido y se puede abrir para leer.
 
@@ -34,11 +36,13 @@ El script `functions.py` consta de una serie de funciones auxiliares que se util
 
 3. `create_and_apply_styles(wb)`: Crea y aplica estilos personalizados para las filas pares e impares de las hojas de cálculo.
 
-4. `process_sheet(dfs, wb, odd_row_style, even_row_style)`: Procesa cada hoja en el DataFrame, realiza varias transformaciones de datos y modifica el libro de trabajo.
+4. `calc_m2_totales(df)`: Calcula los metros cuadrados totales según varias columnas en el DataFrame.
+ 
+5. `calc_stats(sheet, group)`: Calcula estadísticas para cada grupo de datos. Las estadísticas calculadas incluyen el promedio, la moda, la mediana, el mínimo, el máximo y los percentiles de 80, 85, 90 y 95. También se crea un cuadro de resumen que contiene las estadísticas calculadas en la parte inferior de la hoja de cálculo. 
 
-5. `save_workbook(wb, selected_file)`: Guarda el libro de trabajo modificado como un nuevo archivo de Excel.
+6. `process_sheet(dfs, wb, odd_row_style, even_row_style)`: Procesa cada hoja en el DataFrame, realiza varias transformaciones de datos y modifica el libro de trabajo.
 
-Además, hay una serie de funciones más pequeñas dentro de `process_sheet()` que realizan tareas específicas en el proceso de transformación de datos.
+7. `save_workbook(wb, selected_file)`: Guarda el libro de trabajo modificado como un nuevo archivo de Excel.
 
 ## Uso
 
@@ -48,7 +52,22 @@ Para ejecutar el script, asegúrese de tener Python instalado en su sistema, as�
 python main.py
 ```
 
-Se le pedirá que seleccione el archivo de Excel a procesar. El programa luego procesará el archivo, realizará varias transformaciones de datos y guardará los resultados en un nuevo archivo de Excel en la misma carpeta que el archivo original.
+Se le pedirá que seleccione el archivo de Excel a procesar. El programa luego procesará el archivo, realizará varias transformaciones de datos y guardará los resultados en un nuevo archivo de Excel en la misma carpeta que el archivo original. El archivo de Excel tiene que venir de Busconido, tener una sola hoja y contar con los siguientes columnas:
+
+- `Estudio`
+- `Habitaciones`
+- `Baños`
+- `Latitud`
+- `Superficie`
+- `Mts Total`
+- `Mts Útil`
+- `Mts Total Imp`
+- `Mts Útil Imp`
+- `Url Busconido`
+- `Descripción`
+- `F. Desactivación`
+- `Precio ($)`
+
 
 También hay la posibilidad de correr el archivo ejecutable, que se encuentra en la carpeta `executable_files`. Para ejecutar el archivo ejecutable, simplemente haga doble clic en él. Se le pedirá que seleccione el archivo de Excel a procesar. El programa luego procesará el archivo, realizará varias transformaciones de datos y guardará los resultados en un nuevo archivo de Excel en una nueva carpeta en la misma carpeta que el archivo ejecutable.
 
@@ -119,4 +138,4 @@ Este proyecto está licenciado bajo los términos de la licencia de CCLA.
 
 ## Contacto
 
-Este programa fue creado por Josh Mysore, un estudiante de Havard, durante una pasantía con Compass en Julio 2023. Si tiene alguna pregunta o comentario sobre este proyecto, por favor póngase en contacto con el mantenedor actual del proyecto.
+Este programa fue creado por Josh Mysore (joshmysore@college.harvard.edu), un estudiante de Havard, durante una pasantía con Compass en Julio 2023. Si tiene alguna pregunta o comentario sobre este proyecto, por favor póngase en contacto con el mantenedor actual del proyecto. 
