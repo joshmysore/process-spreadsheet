@@ -8,6 +8,8 @@ Busconido es un portal de arriendo en Chile que aporta datos actuales del mercad
 
 El script `main.py` es el punto de entrada del programa y utiliza funciones definidas en el script `functions.py` para realizar el procesamiento. `functions.py` contiene una serie de funciones auxiliares que se utilizan para tareas específicas en el proceso de transformación de datos.
 
+Se puede elegir cualquier núumero de archivos que se quiera (con tal de que correspondan con el formato requerido) y correr el programa.
+
 ## `main.py`
 
 `main.py` consta de una función principal `main()` que se ejecuta cuando el script se ejecuta como un programa independiente. Aquí está la descripción detallada del flujo del programa:
@@ -52,7 +54,7 @@ Para ejecutar el script, asegúrese de tener Python instalado en su sistema, as�
 python main.py
 ```
 
-Se le pedirá que seleccione el archivo de Excel a procesar. El programa luego procesará el archivo, realizará varias transformaciones de datos y guardará los resultados en un nuevo archivo de Excel en la misma carpeta que el archivo original. El archivo de Excel tiene que venir de Busconido, tener una sola hoja y contar con los siguientes columnas:
+Se le pedirá que seleccione los archivos de Excel a procesar. El programa luego procesará los archivos, realizará varias transformaciones de datos y guardará los resultados en nuevos archivos de Excel. Los archivos de Excel tiene que venir de Busconido, tener una sola hoja y contar con los siguientes columnas:
 
 - `Estudio`
 - `Habitaciones`

@@ -22,39 +22,63 @@ def setup_process():
         ]
     )
 
-    # Solicitar al usuario el nombre de archivo y guardarlo en una variable
-    input('Presione Enter para seleccionar el archivo de Excel a procesar...')
+    # Solicitar al usuario los archivos y guardarlos
+    input('Presione Enter para seleccionar los archivos de Excel a procesar...')
     root = tk.Tk()
     root.withdraw()
-    selected_file = filedialog.askopenfilename()
-    selected_file_name = os.path.basename(selected_file)
+    selected_files = filedialog.askopenfilenames()
+
+    # Directorio de las rutas de los archivos y de los registros
+    folders = {}
+    loggers = {}
+    overall_loggers = {}
+
     # Obtener la fecha actual
     now = datetime.now()
-    # Formatear la fecha como una cadena
+    # Formatear la fecha
     current_date = now.strftime("%Y_%d_%m_%H_%M_%S")
-    folder_name = 'resultados_{0}_{1}'.format(selected_file_name, current_date)
 
-    # crear carpeta
-    if not os.path.exists(folder_name):
-        os.makedirs(folder_name)
-        logging.info('Carpeta creada en {0}'.format(os.getcwd()))
+    for selected_file in selected_files:
+        selected_file_name = os.path.basename(selected_file)
+        folder_name = 'resultados_{0}_{1}'.format(selected_file_name, current_date)
 
-    # Ahora que existe el directorio, crear el archivo de registro en él
-    file_handler = logging.FileHandler("{0}/debug_{1}_{2}.log".format(folder_name, selected_file_name, current_date))
-    logging.getLogger().addHandler(file_handler)
+        # crear carpeta
+        if not os.path.exists(folder_name):
+            os.makedirs(folder_name)
 
-    # declaración que indica que se ha creado y guardado el archivo de registro donde se encuentre
-    logging.info('Archivo de log creado en {0}'.format(os.getcwd()))
+        # Ahora que existe el directorio, crear el archivo de registro en él
+        file_handler = logging.FileHandler("{0}/debug_{1}_{2}.log".format(folder_name, selected_file_name, current_date))
 
-    # cambiar el directorio de trabajo a la nueva carpeta
-    os.chdir(folder_name)
+        # Crea un registro específico para el archivo
+        file_logger = logging.getLogger(selected_file)
+        file_logger.setLevel(logging.INFO)
+        file_logger.addHandler(file_handler)
 
-    logging.info('Empezando el programa')
+        # Declaración que indica que se ha creado y guardado el archivo de registro donde se encuentre
+        file_logger.info('Archivo de registro creado en {0}'.format(os.getcwd()))
 
-    return selected_file
+         # Crear un archivo de registro general
+        overall_file_handler = logging.FileHandler("{0}/overall_{1}_{2}.log".format(folder_name, selected_file_name, current_date))
+        overall_logger = logging.getLogger("overall")
+        overall_logger.setLevel(logging.INFO)
+        overall_logger.addHandler(overall_file_handler)
+
+        # Declaración que indica que se ha creado y guardado el archivo de registro donde se encuentre
+        overall_logger.info('Archivo de registro overall creado en {0}'.format(os.getcwd()))
+
+        # Guardar los directorios y los registros
+        folders[selected_file] = folder_name
+        loggers[selected_file] = file_logger
+        overall_loggers[selected_file] = overall_logger  
+
+     # Declaración que indica que se ha creado y guardado el archivo de registro donde se encuentre
+    for overall_logger in overall_loggers.values():
+        overall_logger.info('Empezando el programa')
+
+    return folders, loggers, overall_loggers
 
 # Define función para calcular m2 totales
-def calc_m2_totales(df):
+def calc_m2_totales(df, logger):
     columns = ["Superficie",
                "Mts Total",
                "Mts Útil",
@@ -67,21 +91,21 @@ def calc_m2_totales(df):
         df[column] = df[column].fillna(0)
     # Calcular el máximo de las columnas
     df["m2 totales"] = df[columns].max(axis=1)
-    logging.info(f'Columnas {columns} procesadas para calcular m2 totales')
+    logger.info(f'Columnas {columns} procesadas para calcular m2 totales')
     return df["m2 totales"]
 
 # Define función para calcular estadísticas
-def calc_stats(sheet, group):
+def calc_stats(sheet, group, logger):
     # Define el número de filas de estadísticas
     row_num_stats = len(group) + 4
-    logging.info(f'Calculando estadísticas para {len(group)} filas')
+    logger.info(f'Calculando estadísticas para {len(group)} filas')
 
     # Define el estilo de las celdas de estadísticas
     bold_font = Font(bold=True)
     blue_fill = PatternFill(
         start_color="9ab7e6", end_color="9ab7e6", fill_type="solid"
     )
-    logging.info(f'Estilo de celdas de estadísticas definido como bold_font y blue_fill')
+    logger.info(f'Estilo de celdas de estadísticas definido como bold_font y blue_fill')
 
     # Define las etiquetas de las estadísticas
     labels = [
@@ -95,7 +119,7 @@ def calc_stats(sheet, group):
         "Percentil 90:",
         "Percentil 95:",
     ]
-    logging.info(f'Etiquetas de estadísticas definidas: {labels}')
+    logger.info(f'Etiquetas de estadísticas definidas: {labels}')
 
     # Define las fórmulas de las estadísticas
     for i in range(len(labels) + 1):
@@ -125,7 +149,8 @@ def calc_stats(sheet, group):
 
     if precio_column is None or m2_column is None:
         print(f"Columnas no encontradas para 'Precio ($)' y 'm2 totales'")
-        exit()
+        # salta este archivo
+        return
 
     # Definir las funciones de estadísticas
     functions = {
@@ -158,42 +183,42 @@ def calc_stats(sheet, group):
             i += 1
 
 # Define función para comprobar la validez del archivo
-def check_file_validity(selected_file):
+def check_file_validity(selected_file, logger):
     # Comprobar si selected_file es un archivo de Excel
     if not selected_file.endswith((".xls", ".xlsx")):
-        logging.info(f'"{selected_file}" no es un archivo de Excel.')
-        exit()
+        logger.info(f'"{selected_file}" no es un archivo de Excel.')
+        return False
 
     try:
         # Comprobar si el archivo no está abierto por otro programa
         with open(selected_file, "r") as f:
             pass
     except IOError:
-        logging.info(f'"{selected_file}" está abierto en otro programa.')
-        exit()
+        logger.info(f'"{selected_file}" está abierto en otro programa.')
+        return False
 
     try:
         # Comprobar si el archivo no está vacío
         dfs = pd.read_excel(selected_file, sheet_name=None)
         first_sheet = list(dfs.keys())[0]
         if dfs[first_sheet].empty:
-            logging.info(f'"{selected_file}" está vacío. Se omitirá este archivo.')
-            exit()
+            logger.info(f'"{selected_file}" está vacío. Se omitirá este archivo.')
+            return False
     except Exception as e:
-        logging.info(f'No se puede leer "{selected_file}". Error: {str(e)}.')
-        exit()
+        logger.info(f'No se puede leer "{selected_file}". Error: {str(e)}.')
+        return False
 
     # Comprobar de que el archivo solo tenga una hoja
     if len(dfs.keys()) > 1:
-        logging.info(f'"{selected_file}" contiene más de una hoja. Se omitirá este archivo.')
-        exit()
+        logger.info(f'"{selected_file}" contiene más de una hoja. Se omitirá este archivo.')
+        return False
 
     # Declaración de registro que indica las comprobaciones que se han pasado
-    logging.info(f'El archivo {selected_file} ha pasado las comprobaciones de ser un archivo de Excel con contenido.')
+    logger.info(f'El archivo {selected_file} ha pasado las comprobaciones de ser un archivo de Excel con contenido.')
     return True
 
 # Define función para leer y preprocesar el archivo
-def read_and_preprocess_file(selected_file):
+def read_and_preprocess_file(selected_file, logger):
     # Leer el archivo de Excel en un DataFrame
     dfs = pd.read_excel(selected_file, sheet_name=None)
 
@@ -217,20 +242,20 @@ def read_and_preprocess_file(selected_file):
     # Comprobar si cada hoja en el archivo contiene todas las columnas requeridas
     for sheet_name, df in dfs.items():
         if not set(required_columns).issubset(df.columns):
-            logging.info(
+            logger.info(
                 f'La hoja "{sheet_name}" en "{selected_file}" no contiene las columnas requeridas. Se omitirá este archivo.'
             )
-            exit()
+            return False
 
     # Comprobar si las columnas "Habitaciones" y "Baños" contienen valores numéricos
     for sheet_name, df in dfs.items():
         if df["Habitaciones"].dtype not in ["int64", "float64"] or df[
             "Baños"
         ].dtype not in ["int64", "float64"]:
-            logging.info(
+            logger.info(
                 f'La hoja "{sheet_name}" en "{selected_file}" contiene datos incorrectos para "Habitaciones" y/o "Baños". Se omitirá este archivo.'
             )
-            exit()
+            return False
 
     # Comprobar si las columnas "Habitaciones" y "Baños" contienen valores numéricos
     for sheet_name, df in dfs.items():
@@ -243,7 +268,7 @@ def read_and_preprocess_file(selected_file):
             logging.info(
                 f'La hoja "{sheet_name}" en "{selected_file}" contiene datos incorrectos para "Habitaciones" y/o "Baños". Se omitirá este archivo.'
             )
-            exit()
+            return False
 
     return dfs
 
@@ -266,7 +291,7 @@ def create_and_apply_styles(wb):
     return odd_row_style, even_row_style
 
 # Define función para procesar las hojas
-def process_sheet(dfs, wb, odd_row_style, even_row_style):
+def process_sheet(dfs, wb, odd_row_style, even_row_style, logger):
     for sheet_name, df in dfs.items():   
         # Crear tipología
         df["Tipología"] = np.where(
@@ -274,24 +299,24 @@ def process_sheet(dfs, wb, odd_row_style, even_row_style):
             "Estudio",
             df["Habitaciones"].astype(str) + "D" + df["Baños"].astype(str) + "B",
         )
-        logging.info(f'Columna Tipología creada con: {df["Tipología"]}')
+        logger.info(f'Columna Tipología creada con: {df["Tipología"]}')
         
         # Eliminar duplicados
         df.drop_duplicates(subset="Latitud", keep="first", inplace=True)
-        logging.info(f'Duplicados borrados basados en la columna Latitud')
+        logger.info(f'Duplicados borrados basados en la columna Latitud')
 
         # Calcular m2 totales y rangos
-        df["m2 totales"] = calc_m2_totales(df)
+        df["m2 totales"] = calc_m2_totales(df, logger)
         df["Rangos"] = ""
-        logging.info(f'Columna m2 totales creada con: {df["m2 totales"]}')
-        logging.info(f'Columna Rangos creada con: {df["Rangos"]}')
+        logger.info(f'Columna m2 totales creada con: {df["m2 totales"]}')
+        logger.info(f'Columna Rangos creada con: {df["Rangos"]}')
 
         # Eliminar columnas innecesarias
         df.drop(
             columns=["Url Busconido", "Descripción", "F. Desactivación"],
             inplace=True,
         )
-        logging.info(f'Columnas innecesarias borradas: Url Busconido, Descripción, F. Desactivación')
+        logger.info(f'Columnas innecesarias borradas: Url Busconido, Descripción, F. Desactivación')
 
         # Calcular el índice de la columna Precio ($)
         price_index = df.columns.get_loc("Precio ($)")
@@ -303,18 +328,18 @@ def process_sheet(dfs, wb, odd_row_style, even_row_style):
             + df.columns.tolist()[price_index + 1 : -2],
             axis=1,
         )
-        logging.info(f'Columnas reorganizadas')
+        logger.info(f'Columnas reorganizadas')
 
         # Agrupar por tipología
         grouped = df.groupby("Tipología")
-        logging.info(f'Columnas agrupadas por Tipología: {grouped}')
+        logger.info(f'Columnas agrupadas por Tipología: {grouped}')
 
         # Para cada tipología, calcular estadísticas
         for typology, group in grouped:
             # Calcular el mínimo y máximo de m2 totales
             min_m2 = min(group["m2 totales"])
             max_m2 = max(group["m2 totales"])
-            logging.info(f'Calculando mínimo y máximo de m2 totales: {min_m2} y {max_m2}')
+            logger.info(f'Calculando mínimo y máximo de m2 totales: {min_m2} y {max_m2}')
 
             # Si el mínimo y máximo son iguales, solo hay un rango
             if min_m2 == max_m2:
@@ -322,13 +347,13 @@ def process_sheet(dfs, wb, odd_row_style, even_row_style):
             else:
                 # Calcular el número de rangos 
                 num_ranges = math.ceil((max_m2 - min_m2) / 10)
-                logging.info(f'Calculando número de rangos: {num_ranges}')
+                logger.info(f'Calculando número de rangos: {num_ranges}')
 
             # Crear una lista de tuplas con los rangos
             filter_ranges = [
                 (min_m2 + i * 10, min_m2 + (i + 1) * 10) for i in range(num_ranges)
             ]
-            logging.info(f'Creando lista de tuplas con los rangos: {filter_ranges}')
+            logger.info(f'Creando lista de tuplas con los rangos: {filter_ranges}')
 
             # Agregar el rango a la columna Rangos
             group["Rangos"] = pd.cut(
@@ -337,7 +362,7 @@ def process_sheet(dfs, wb, odd_row_style, even_row_style):
                 labels=[f"{range[0]}-{range[1]}" for range in filter_ranges],
                 include_lowest=True,
             )
-            logging.info(f'Añadiendo el rango a la columna Rangos: {group["Rangos"]}')
+            logger.info(f'Añadiendo el rango a la columna Rangos: {group["Rangos"]}')
 
             # Colocar el grupo en el DataFrame
             df.loc[group.index, :] = group
@@ -349,7 +374,7 @@ def process_sheet(dfs, wb, odd_row_style, even_row_style):
                 sheet_name = f"{typology}_{sheet_counter}"
                 sheet_counter += 1
             sheet = wb.create_sheet(str(sheet_name))
-            logging.info(f'Creando hoja {sheet_name}')
+            logger.info(f'Creando hoja {sheet_name}')
 
             # Crear estilos para las filas pares e impares
             for r in dataframe_to_rows(group, index=False, header=True):
@@ -371,11 +396,11 @@ def process_sheet(dfs, wb, odd_row_style, even_row_style):
                         top=Side(border_style="thin", color="d3d3d3"),
                         bottom=Side(border_style="thin", color="d3d3d3"),
                     )
-            logging.info(f'Estilos definidos para las filas pares e impares')
+            logger.info(f'Estilos definidos para las filas pares e impares')
 
             # Agregar las estadísticas
-            calc_stats(sheet, group)
-            logging.info(f'Añadiendo estadísticos')
+            calc_stats(sheet, group, logger)
+            logger.info(f'Añadiendo estadísticos')
 
             # Ajustar el ancho de las columnas
             for column_cells in sheet.columns:
@@ -386,14 +411,14 @@ def process_sheet(dfs, wb, odd_row_style, even_row_style):
                 # Ajustar el ancho de la columna A
                 max_length_id = max(len(str(cell.value)) for cell in sheet["A"])
                 sheet.column_dimensions["A"].width = max_length_id + 4
-            logging.info(f'Ajustando el ancho de las columnas')
+            logger.info(f'Ajustando el ancho de las columnas')
 
             # Establecer el estilo de las celdas de estadísticas
             bold_font = Font(bold=True)
             blue_fill = PatternFill(
                 start_color="9ab7e6", end_color="9ab7e6", fill_type="solid"
             )
-            logging.info(f'Estilo de celdas de estadísticas definido como bold_font y blue_fill')
+            logger.info(f'Estilo de celdas de estadísticas definido como bold_font y blue_fill')
             # Dar diseño a la tabla
             for cell in sheet[1]:
                 cell.font = bold_font
@@ -420,9 +445,9 @@ def process_sheet(dfs, wb, odd_row_style, even_row_style):
     return wb
 
 # Define función para guardar el nuevo archivo
-def save_workbook(wb, selected_file):
+def save_workbook(wb, selected_file, logger):
     # Guardar el libro de trabajo e imprimir la dirección
     processed_file_name = "procesado_" + os.path.basename(selected_file)
     wb.save(processed_file_name)
-    logging.info(f'Procesamiento de datos finalizado. Resultados guardados como "{processed_file_name}" en {os.getcwd()}')
+    logger.info(f'Procesamiento de datos finalizado. Resultados guardados como "{processed_file_name}" en {os.getcwd()}')
     return processed_file_name
