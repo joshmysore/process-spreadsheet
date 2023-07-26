@@ -51,7 +51,7 @@ def main():
         for handler in overall_logger.handlers:
             handler.close()
 
-    # Cerrar los handlers del logger general para todos los archivos
+    # Añadir un mensaje al logger general para cada archivo procesado
     for selected_file, overall_logger in overall_loggers.items():
         overall_logger.info(f'Archivo {selected_file} procesado.')
 
